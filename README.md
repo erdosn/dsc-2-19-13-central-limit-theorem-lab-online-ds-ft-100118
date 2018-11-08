@@ -16,15 +16,34 @@ You will be able to:
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-%matplotlib inline
 import seaborn as sns
 import scipy.stats as st
+
+import random
 np.random.seed(0)
 ```
 
 Next, read in the dataset.  A dataset of 10,000 numbers is stored in `non_normal_dataset.csv`. Use pandas to read the data in to a series.
 
 **_Hint:_** Any of the `read_` methods in pandas will store 1-dimensional in a Series instead of a DataFrame if passed in the optimal parameter `squeeze=True`.
+
+
+```python
+df = pd.read_csv("non_normal_dataset.csv", squeeze=True)
+df.head()
+```
+
+
+
+
+    0     5
+    1     3
+    2     3
+    3     1
+    4    13
+    Name: 3, dtype: int64
+
+
 
 ## Detecting Non-Normal Datasets
 
@@ -34,11 +53,38 @@ There are two main ways to check if a sample follows the normal distribution or 
 
 In the cell below, use `seaborn`'s `distplot` method to visualize a histogram of the distribution overlaid with the a probability density curve.  
 
+
+```python
+sns.distplot(df.values, kde=True)
+plt.grid()
+plt.show()
+```
+
+    /anaconda3/lib/python3.6/site-packages/matplotlib/axes/_axes.py:6462: UserWarning: The 'normed' kwarg is deprecated, and has been replaced by the 'density' kwarg.
+      warnings.warn("The 'normed' kwarg is deprecated, and has been "
+
+
+
+![png](index_files/index_6_1.png)
+
+
 As expected, this dataset is not normally distributed.  
 
 For a more formal way to check if a dataset is normally distributed or not, we can make use of a statistical test.  There are many different statistical tests that can be used to check for normality, but we'll keep it simple and just make use the `normaltest` function from scipy--see the documentation if you have questions about how to use this method. 
 
 In the cell below, use `normaltest()` to check if the dataset is normally distributed.  
+
+
+```python
+st.normaltest(df.values) # super skewed! 
+```
+
+
+
+
+    NormaltestResult(statistic=43432.811126532004, pvalue=0.0)
+
+
 
 The output may seem a bit hard to interpret since we haven't covered hypothesis testing and p-values yet.  However, the function tests the hypothesis that the distribution passed into the function differs from the normal distribution.  The null hypothesis would then be that the data is normally distributed.  For now, that's all you need to remember--this will make more sense once you understand p-values.  
 
@@ -53,11 +99,18 @@ In the cell below, write a function that takes in an array of numbers `data` and
 
 ```python
 def get_sample(data, n):
-    pass
-
-test_sample = get_sample(data, 30)
+    sample = []
+    while len(sample) != n:
+        x = np.random.choice(data)
+        sample.append(x)
+    
+    return sample
+test_sample = get_sample(df.values, 30)
 print(test_sample[:5]) # [56, 12, 73, 24, 8] (This will change if you run it mutliple times)
 ```
+
+    [48, 46, 70, 12, 48]
+
 
 ## Generating a Sample Mean
 
@@ -66,12 +119,17 @@ Next, we'll write another helper function that takes in a sample and returns the
 
 ```python
 def get_sample_mean(sample):
-    pass
+    if isinstance(sample, list):
+        sample = np.array(sample)
+    return sample.mean()
 
-test_sample2 = get_sample(data, 30)
+test_sample2 = get_sample(df.values, 30)
 test_sample2_mean = get_sample_mean(test_sample2)
 print(test_sample2_mean) # 45.3 (This will also change if you run it multiple times)
 ```
+
+    49.333333333333336
+
 
 ### Creating a Sample Distribution of Sample Means
 
@@ -82,11 +140,17 @@ In the cell below, write a function that takes in 3 arguments: the dataset, the 
 
 ```python
 def create_sample_distribution(data, dist_size=100, n=30):
-    pass
+    means = []
+    for i in range(dist_size):
+        means.append(get_sample_mean(get_sample(data, n)))
+    return means
 
-test_sample_dist = create_sample_distribution(data)
+test_sample_dist = create_sample_distribution(df.values, dist_size=10, n=3)
 print(test_sample_dist[:5]) # [54.53333333333333, 60.666666666666664, 37.3, 39.266666666666666, 35.9]
 ```
+
+    [68.0, 10.333333333333334, 25.666666666666668, 21.333333333333332, 55.333333333333336]
+
 
 ## Visualizing the Sample Distribution as it Becomes Normal
 
@@ -96,11 +160,58 @@ Let's create some sample distributions of different sizes and watch the Central 
 
 In the cell below, create a sample distribution from `data` of `dist_size` 10, with a sample size `n` of 3. Then, visualize this sample distribution with `distplot`.
 
+
+```python
+sns.distplot(test_sample_dist, kde=True)
+plt.grid()
+plt.show()
+```
+
+    /anaconda3/lib/python3.6/site-packages/matplotlib/axes/_axes.py:6462: UserWarning: The 'normed' kwarg is deprecated, and has been replaced by the 'density' kwarg.
+      warnings.warn("The 'normed' kwarg is deprecated, and has been "
+
+
+
+![png](index_files/index_17_1.png)
+
+
 Now, let's increase the `dist_size` to 30, and `n` to 10.  Create another visualization to compare how it changes as size increases.  
+
+
+```python
+means = create_sample_distribution(df.values, dist_size=30, n=10)
+sns.distplot(means, kde=True)
+plt.grid()
+plt.show()
+```
+
+    /anaconda3/lib/python3.6/site-packages/matplotlib/axes/_axes.py:6462: UserWarning: The 'normed' kwarg is deprecated, and has been replaced by the 'density' kwarg.
+      warnings.warn("The 'normed' kwarg is deprecated, and has been "
+
+
+
+![png](index_files/index_19_1.png)
+
 
 The data is already looking much more 'normal' than the first sample distribution, and much more 'normal' that the raw non-normal distribution we're sampling from. 
 
 In the cell below, create another sample distribution of `data` with `dist_size` 1000 and `n` of 30.  Visualize it to confirm the normality of this new distribution. 
+
+
+```python
+means = create_sample_distribution(df.values, dist_size=1000, n=30)
+sns.distplot(means, kde=True)
+plt.grid()
+plt.show()
+```
+
+    /anaconda3/lib/python3.6/site-packages/matplotlib/axes/_axes.py:6462: UserWarning: The 'normed' kwarg is deprecated, and has been replaced by the 'density' kwarg.
+      warnings.warn("The 'normed' kwarg is deprecated, and has been "
+
+
+
+![png](index_files/index_21_1.png)
+
 
 Great! As we can see, the dataset _approximates_ a normal distribution. It isn't pretty, but it's generally normal enough that we can use it to answer questions using z-scores and p-values.  
 
